@@ -1,0 +1,48 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: var(--bg);
+  /* Soft depth: a cool glow from the top, a faint teal glow top-right. (Rev 4: no grid.) */
+  background-image:
+    radial-gradient(ellipse 70% 55% at 50% -12%, var(--bg-glow-blue), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 92% -5%, var(--bg-glow-teal), transparent 70%);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,281 @@
+/*
+ * R2 Summary (laptop first; phone styles in Part C):
+ *   title · three postal cards · bottom line · Learn more + Start over · (details) · note
+ * The page never scrolls; with "Learn more" open, this section scrolls inside itself if needed.
+ */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6);
+  overflow-y: auto;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Three cards side by side */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) var(--space-5);
+  border: var(--border-width) solid var(--border);
+  border-top: 3px solid color-mix(in srgb, var(--accent) 75%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+  box-shadow: var(--highlight);
+  text-align: center;
+}
+
+.insecure {
+  --accent: var(--accent-http);
+}
+
+.https {
+  --accent: var(--accent-https);
+}
+
+.vpn {
+  --accent: var(--accent-vpn);
+}
+
+.cardTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  color: var(--accent);
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.cardText {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* A scenario the visitor didn't run: picture faded, text grey (still ≥ 4.5:1) */
+.muted > svg {
+  opacity: 0.35;
+}
+
+.muted .cardTitle,
+.muted .cardText {
+  color: var(--text-dim);
+}
+
+.notRun {
+  margin: 0;
+  padding: 2px 12px;
+  border: var(--border-width) dashed var(--border-strong);
+  border-radius: var(--radius-pill);
+  color: var(--text-dim);
+  font-size: var(--fs-small);
+}
+
+.bottomLine {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--accent-vpn);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent-vpn) 8%, transparent);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.chevron,
+.chevronOpen {
+  transition: transform var(--dur-ui) var(--ease);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.startOver {
+  margin-left: auto;
+  min-height: 60px;
+  padding: 14px 32px;
+  font-size: var(--fs-caption);
+}
+
+/* "Learn more" details */
+.learn {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.list {
+  padding: var(--space-4) var(--space-5);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--glass);
+}
+
+.list ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: var(--fs-body);
+  line-height: 1.4;
+}
+
+.listTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.does .listTitle {
+  color: var(--accent-vpn);
+}
+
+.doesNot .listTitle {
+  color: var(--accent-http);
+}
+
+.together {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  text-align: center;
+}
+
+.note {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--text-dim);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+}
+
+.note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--accent-vpn);
+}
+
+/* Short laptop screens (e.g. 1280×720): tighter spacing, same font sizes */
+@media (max-height: 760px) {
+  .screen {
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-6);
+  }
+
+  .card {
+    padding: var(--space-3) var(--space-4) var(--space-4);
+  }
+
+  .startOver {
+    min-height: 52px;
+    padding: 10px 28px;
+  }
+}
+
+/* Phones / portrait: cards stack (picture left, text right); the Summary scrolls */
+@media (max-width: 767px), (orientation: portrait) {
+  .screen {
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .card {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    grid-template-areas:
+      'art title'
+      'art text'
+      'art notrun';
+    align-items: center;
+    column-gap: var(--space-3);
+    row-gap: 2px;
+    padding: var(--space-3);
+    text-align: left;
+  }
+
+  .card > svg {
+    grid-area: art;
+  }
+
+  .cardTitle {
+    grid-area: title;
+    margin: 0;
+    font-size: 17px;
+  }
+
+  .cardText {
+    grid-area: text;
+    font-size: 16px;
+  }
+
+  .notRun {
+    grid-area: notrun;
+    justify-self: start;
+  }
+
+  .bottomLine {
+    font-size: 18px;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .startOver {
+    margin-left: 0;
+  }
+
+  .learn {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,81 @@
+/* Progress indicator: plain numbered text with arrows. Not a control: no hover, no pointer. */
+.steps {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-small);
+  font-weight: 500;
+  cursor: default;
+  user-select: none;
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.number {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.upcoming {
+  color: var(--text-dim);
+}
+
+.done {
+  color: var(--text-dim);
+}
+
+.done .number {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--accent-vpn) 25%, transparent);
+  color: var(--accent-vpn);
+}
+
+.current {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.current .number {
+  border-color: var(--info);
+  background: var(--info);
+  color: var(--on-accent);
+}
+
+.arrow {
+  display: inline-flex;
+  color: var(--link);
+}
+
+/* Phones / portrait: numbers for every step, the label only for the current one (others stay for screen readers) */
+@media (max-width: 767px), (orientation: portrait) {
+  .steps {
+    justify-self: center;
+    gap: 4px;
+    font-size: 14px;
+  }
+
+  .upcoming .label,
+  .done .label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

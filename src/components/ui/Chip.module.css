@@ -1,0 +1,44 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 18px;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: var(--fs-body);
+  cursor: pointer;
+  box-shadow: var(--highlight);
+  transition:
+    border-color var(--dur-fast) ease,
+    background-color var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
+}
+
+.chip:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
+}
+
+.chip:active {
+  transform: translateY(1px);
+}
+
+.chip:focus-visible {
+  outline: none;
+  box-shadow: var(--highlight), var(--ring);
+}
+
+.selected,
+.selected:hover {
+  border-color: color-mix(in srgb, var(--info) 70%, transparent);
+  background: color-mix(in srgb, var(--info) 16%, var(--surface));
+  color: var(--text);
+  box-shadow:
+    var(--highlight),
+    0 0 0 3px color-mix(in srgb, var(--info) 18%, transparent);
+}
+
+.selected svg {
+  color: var(--info);
+}

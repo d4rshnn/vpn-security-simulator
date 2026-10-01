@@ -1,0 +1,294 @@
+/*
+ * Shared styles for the SVG network diagram. Sizes are SVG user units (viewBox 1200×520).
+ * Rev 4: calm. No glows, thin borders, one accent per scenario (amber HTTP, blue HTTPS, teal VPN).
+ * Readability: the diagram renders at about 0.87–1.1× on 1280×720…1920×1080; text ≥ 19 units.
+ */
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  user-select: none;
+}
+
+.emblem {
+  display: block;
+  width: 300px;
+  height: auto;
+  overflow: visible;
+}
+
+/* Text with a background-coloured halo so it stays readable over lines. */
+.label,
+.sublabel,
+.linkLabel,
+.tunnelLabel,
+.bracketLabel,
+.deliveredText {
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 8px;
+  stroke-linejoin: round;
+}
+
+.label {
+  fill: var(--text);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sublabel {
+  fill: var(--text-dim);
+  font-size: 21px;
+}
+
+/* Node tiles: neutral slate, thin border, no glow */
+.node {
+  color: var(--text-dim);
+}
+
+.tile {
+  fill: var(--surface);
+  stroke: color-mix(in srgb, currentColor 45%, transparent);
+  stroke-width: 1.5px;
+}
+
+.tileSheen {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.04);
+  stroke-width: 1px;
+}
+
+/* Fill used inside illustrations to occlude what is behind (e.g. the VPN shield badge) */
+.artFill {
+  fill: var(--surface);
+}
+
+.toneSecure {
+  color: var(--accent-vpn);
+}
+
+.toneDanger {
+  color: var(--danger);
+}
+
+/* A node that isn't used: the tile fades, its label stays readable grey (≥ 4.5:1) */
+.dimmed {
+  color: var(--link);
+  opacity: 0.35;
+}
+
+.dimmedGroup .label {
+  fill: var(--text-dim);
+}
+
+/* Links */
+.link {
+  fill: none;
+  stroke-width: 3px;
+  stroke-linecap: round;
+}
+
+.linkExposed {
+  stroke: var(--accent-http);
+}
+
+.linkHttps {
+  stroke: var(--accent-https);
+}
+
+.linkVpn {
+  stroke: var(--accent-vpn);
+}
+
+.linkDim {
+  stroke: var(--link);
+  opacity: 0.4;
+}
+
+.linkTap {
+  stroke: var(--text-dim);
+  stroke-dasharray: 2 10;
+}
+
+.linkLabel {
+  fill: var(--text-dim);
+  font-size: 21px;
+}
+
+.linkLabelExposed {
+  fill: var(--accent-http);
+}
+
+/* VPN tunnel: a ribbed translucent pipe */
+.tunnelWalls,
+.tunnelBody,
+.tunnelRings {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tunnelWalls {
+  stroke: var(--accent-vpn);
+  stroke-width: 48px;
+  stroke-opacity: 0.55;
+}
+
+.tunnelBody {
+  stroke: color-mix(in srgb, var(--accent-vpn) 10%, var(--bg));
+  stroke-width: 44px;
+}
+
+.tunnelRings {
+  stroke: var(--accent-vpn);
+  stroke-width: 44px;
+  stroke-opacity: 0.1;
+  stroke-linecap: butt;
+  stroke-dasharray: 2.5 34;
+}
+
+.tunnelLabel {
+  fill: var(--accent-vpn);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* HTTPS: a thin blue hairline and a small label (no tunnel, no chip) */
+.bracket {
+  fill: none;
+  stroke: var(--accent-https);
+  stroke-width: 2px;
+  stroke-dasharray: 8 6;
+}
+
+.bracketLabel {
+  fill: var(--accent-https);
+  font-size: 21px;
+  font-weight: 600;
+}
+
+/* Small round seals (tunnel locks) */
+.badgeIcon {
+  color: var(--accent-vpn);
+}
+
+.badge {
+  fill: var(--surface);
+  stroke: var(--accent-vpn);
+  stroke-width: 1.5px;
+}
+
+/* Delivered (text + check under the destination) */
+.delivered {
+  color: var(--text);
+}
+
+.deliveredText {
+  fill: var(--text);
+  font-size: 21px;
+  font-weight: 600;
+}
+
+/* Labels that fade out of the moving postal item's way */
+.fades {
+  transition: opacity 200ms ease;
+}
+
+/* Snooper speech bubble */
+.bubbleShape {
+  fill: var(--surface);
+  stroke: var(--border-strong);
+  stroke-width: 1.5px;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45));
+}
+
+.bubbleDot {
+  fill: var(--danger);
+}
+
+.bubbleHeader {
+  fill: var(--text-dim);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.bubbleReadable {
+  color: var(--accent-http);
+}
+
+.bubbleMessage {
+  fill: var(--accent-http);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.bubbleSealed {
+  color: var(--text-dim);
+}
+
+.bubbleAddress {
+  fill: var(--text);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.bubbleCantOpen {
+  fill: var(--text-dim);
+  font-size: 22px;
+}
+
+.bubbleNote {
+  fill: var(--text-dim);
+  font-size: 19px;
+}
+
+.bubbleIn {
+  animation: bubble-in var(--dur-ui) var(--ease) both;
+}
+
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Summary card pictures */
+.art {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  overflow: visible;
+}
+
+/* Phone (compact) bubble: type sized so it renders at about 13.5 px on a 375 px screen */
+.bubbleCompact .bubbleHeader {
+  font-size: 19px;
+  letter-spacing: 0;
+}
+
+.bubbleCompact .bubbleMessage,
+.bubbleCompact .bubbleAddress {
+  font-size: 20px;
+}
+
+.bubbleCompact .bubbleCantOpen {
+  font-size: 19px;
+}
+
+.bubbleCompact .bubbleNote {
+  font-size: 19px;
+}
+
+@media (max-width: 767px), (orientation: portrait) {
+  .emblem {
+    width: 220px;
+  }
+}

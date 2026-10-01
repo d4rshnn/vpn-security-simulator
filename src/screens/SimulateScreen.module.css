@@ -1,0 +1,101 @@
+/*
+ * Rev 4 layout (designed for 1366×768 first; scales to 1920×1080 and 1280×720):
+ *   diagram (whole width)
+ *   caption
+ *   buttons
+ * The diagram floats on the page background (no frame); the page never scrolls.
+ */
+.screen {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: var(--space-4);
+  height: 100%;
+  padding: var(--space-5) var(--space-6) var(--space-4);
+}
+
+.stage {
+  min-width: 0;
+  min-height: 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* The selected scenario's button is filled with its accent */
+.selectedHttp,
+.selectedHttps,
+.selectedVpn,
+.selectedHttp:not(:disabled):hover,
+.selectedHttps:not(:disabled):hover,
+.selectedVpn:not(:disabled):hover {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--text);
+}
+
+.selectedHttp {
+  --accent: var(--accent-http);
+}
+
+.selectedHttps {
+  --accent: var(--accent-https);
+}
+
+.selectedVpn {
+  --accent: var(--accent-vpn);
+}
+
+.selectedHttp svg,
+.selectedHttps svg,
+.selectedVpn svg {
+  color: var(--accent);
+}
+
+.next {
+  margin-left: auto;
+}
+
+.replay {
+  padding: 1px 8px;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--text-dim);
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+
+/* Phones / portrait: vertical diagram (see network.ts PORTRAIT), caption + 3 buttons pinned at the bottom */
+@media (max-width: 767px), (orientation: portrait) {
+  .screen {
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3) var(--space-3);
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .controls > button {
+    min-height: 52px;
+    padding: 6px 8px;
+    gap: 6px;
+    font-size: 16px;
+    line-height: 1.2;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .replay {
+    display: none;
+  }
+
+  .next {
+    grid-column: 1 / -1;
+    margin-left: 0;
+  }
+}

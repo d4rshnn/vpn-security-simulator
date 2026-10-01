@@ -1,0 +1,116 @@
+/* Rev 4 postal items: warm paper, dark ink, one accent per scenario. Sizes are SVG units. */
+
+.item {
+  pointer-events: none;
+}
+
+.http {
+  color: var(--accent-http);
+}
+
+.https {
+  color: var(--accent-https);
+}
+
+.vpn {
+  color: var(--accent-vpn);
+}
+
+/* The postcard edge is amber in every scenario: a postcard is readable */
+.postcard {
+  color: var(--accent-http);
+}
+
+.paper {
+  fill: var(--paper);
+  stroke: currentColor;
+  stroke-width: 2.5px;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
+.message {
+  fill: var(--ink);
+  font-size: 21px;
+  font-weight: 600;
+  white-space: pre;
+}
+
+.divider,
+.addressLine {
+  stroke: var(--ink-soft);
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+
+.stamp {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2px;
+  stroke-dasharray: 3 3;
+}
+
+.stampMark {
+  fill: currentColor;
+  opacity: 0.55;
+}
+
+/* Envelope */
+.envelopeBack,
+.pocket {
+  fill: var(--paper);
+  stroke: currentColor;
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
+.envelopeBack {
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
+.flap {
+  fill: var(--paper-shade);
+  stroke: currentColor;
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
+.seal {
+  fill: currentColor;
+}
+
+.sealIcon {
+  color: var(--paper);
+}
+
+.address {
+  fill: var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* Stem and dot on the line */
+.stem {
+  stroke: currentColor;
+  stroke-width: 2px;
+  stroke-opacity: 0.6;
+}
+
+.dot {
+  fill: currentColor;
+  stroke: var(--bg);
+  stroke-width: 3px;
+}
+
+.postcardState .stem,
+.postcardState .dot {
+  color: var(--accent-http);
+}
+
+/* Ghost copy (what the snooper receives): dashed, translucent, no shadow */
+.ghost .paper,
+.ghost .envelopeBack,
+.ghost .pocket,
+.ghost .flap {
+  stroke-dasharray: 8 6;
+  filter: none;
+}
