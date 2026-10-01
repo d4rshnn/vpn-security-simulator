@@ -1,26 +1,58 @@
 # VPN Simulation
 
-A browser-based VPN simulation for the VJTI Community of Coders cybersecurity stall. It shows what someone on café Wi-Fi can read when a message is sent over plain HTTP, HTTPS, and through a VPN. Everything is simulated; nothing is stored or sent anywhere.
+An interactive, browser-based simulation that shows what someone snooping on public Wi-Fi can read when you send a message, and how that changes with HTTPS and a VPN.
 
-## Run
+The same message is sent three ways, drawn as mail:
 
-Needs Node.js 20.19+ or 22.12+.
+| Scenario | The message is... | The snooper sees... |
+|---|---|---|
+| Insecure (HTTP) | a postcard | the message itself |
+| HTTPS | a postcard sealed in an envelope | who it is addressed to, not what it says |
+| VPN | that envelope inside a bigger envelope | only a sealed envelope going to the VPN server |
+
+Everything is simulated in the browser. Nothing is stored, tracked, or sent anywhere. Works on laptops and phones.
+
+## Requirements
+
+- Node.js 20.19+ or 22.12+ (check with `node -v`)
+- npm (comes with Node)
+
+The exact list is in `requirements.txt`.
+
+## Run it
 
 ```
+git clone <repo-url>
+cd vpn-security-simulator
 npm install
 npm run dev
 ```
 
-For offline use (works with Wi-Fi off), build once and serve the result:
+Open the address it prints (usually http://localhost:5173).
+
+## Run it offline
+
+Build once, then serve the built files. This works with Wi-Fi switched off.
 
 ```
-npm run build && npm run preview
+npm run build
+npm run preview
 ```
 
-Other scripts: `npm test`, `npm run lint`.
+Open the address it prints (usually http://localhost:4173).
+
+## Other commands
+
+| Command | What it does |
+|---|---|
+| `npm test` | run the tests |
+| `npm run lint` | check the code style |
+| `npm run build` | build to `dist/` |
 
 ## Deploy
 
-Import the repo in Vercel (Vite preset, build command `npm run build`, output directory `dist`).
+Import the repo in Vercel with the Vite preset: build command `npm run build`, output directory `dist`. No environment variables needed.
 
-Fonts: OFL-1.1 (Inter, JetBrains Mono). Icons: Lucide, ISC.
+## Credits
+
+Fonts: Inter and JetBrains Mono (OFL-1.1). Icons: Lucide (ISC).
