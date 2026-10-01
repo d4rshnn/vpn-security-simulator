@@ -51,7 +51,13 @@ export function SnooperBubble({ seen, revealed }: SnooperBubbleProps) {
 
   const messageLines = seen.readable && seen.message ? wrapMessage(`“${seen.message}”`, compact ? 17 : 30, compact ? 3 : 2) : []
   const noteLines = seen.canStillSeeNote ? (compact ? wrapMessage(copy.bubble.stillSees, 16, 3) : [copy.bubble.stillSees]) : []
-  const rows = seen.readable ? messageLines.length : 2
+  // What the snooper captured (HTTPS / VPN): "Inside: 8F 4A 91 C7 2B 0E …". On a phone it wraps onto two short lines.
+  const insideLines = seen.inside
+    ? compact
+      ? [`${copy.bubble.inside} ${seen.inside.split(' ').slice(0, 3).join(' ')}`, seen.inside.split(' ').slice(3).join(' ')].filter(Boolean)
+      : [`${copy.bubble.inside} ${seen.inside}`]
+    : []
+  const rows = seen.readable ? messageLines.length : 2 + insideLines.length
   const headerH = compact ? 46 : 58
   const h = headerH + rows * lineH + noteLines.length * (compact ? 25 : 32) + (compact ? 12 : 6)
 
@@ -61,7 +67,7 @@ export function SnooperBubble({ seen, revealed }: SnooperBubbleProps) {
   const y = compact ? layout.bubble.y : Math.min(snooper.y - h / 2, layout.viewBox.height - 4 - h)
   const tipY = compact ? snooper.y + NODE_HEIGHT / 2 + 44 : Math.min(Math.max(snooper.y, y + 30), y + h - 30)
   const line = (i: number) => y + headerH + 20 + i * lineH
-  const noteY = (i: number) => y + headerH + 22 + rows * lineH + i * 25
+  const noteY = (i: number) => y + headerH + 22 + rows * lineH + i * (compact ? 25 : 32)
 
   return (
     <g className={`${styles.bubble} ${compact ? styles.bubbleCompact : ''}`} aria-hidden="true">
@@ -95,9 +101,16 @@ export function SnooperBubble({ seen, revealed }: SnooperBubbleProps) {
           {copy.bubble.cantOpen}
         </text>
       )}
+      {!seen.readable &&
+        revealed.has('bytes') &&
+        insideLines.map((text, i) => (
+          <text key={i} className={`${styles.bubbleBytes} ${styles.bubbleIn}`} x={textX(x)} y={line(2 + i)}>
+            {text}
+          </text>
+        ))}
       {revealed.has('note') &&
         noteLines.map((text, i) => (
-          <text key={i} className={`${styles.bubbleNote} ${styles.bubbleIn}`} x={x + PAD} y={compact ? noteY(i) : line(2) + 2}>
+          <text key={i} className={`${styles.bubbleNote} ${styles.bubbleIn}`} x={x + PAD} y={noteY(i)}>
             {text}
           </text>
         ))}

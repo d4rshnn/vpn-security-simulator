@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { copy } from '../content/copy'
 import { ADDRESSES, ROUTES, SCENARIO_ROUTE } from '../simulation/network'
 import { buildScenario, captionText, firstCaption, frameAt, snooperSees, type MotionStep } from '../simulation/scenarios'
+import { SAMPLE_MESSAGES } from '../content/samples'
+import { randomBytes } from '../simulation/simulatedBytes'
 import { totalDuration } from '../simulation/timeline'
 import type { Scenario } from '../site/types'
 
@@ -228,8 +230,61 @@ describe('captions and bubble reveals (spec §I)', () => {
     const reveals = steps.filter((x): x is Extract<MotionStep, { kind: 'reveal' }> => x.kind === 'reveal')
     expect(reveals[0].at).toBeGreaterThanOrEqual(ghost.at + ghost.dur)
     const fields = reveals.map((r) => r.field)
-    expect(fields).toEqual(s === 'insecure' ? ['content'] : s === 'https' ? ['address', 'content'] : ['address', 'content', 'note'])
+    expect(fields).toEqual(
+      s === 'insecure'
+        ? ['content']
+        : s === 'https'
+          ? ['address', 'content', 'bytes']
+          : ['address', 'content', 'bytes', 'note'],
+    )
     expect(frameAt(steps, ghost.at + ghost.dur - 0.01).revealed.size).toBe(0)
     expect(frameAt(steps, end(s)).revealed.size).toBe(reveals.length)
+  })
+})
+
+describe('snooper bubble bytes (simulated encryption)', () => {
+  it('HTTP: the bubble still shows the readable message and no bytes', () => {
+    for (const message of SAMPLE_MESSAGES) {
+      const v = snooperSees('insecure', message, randomBytes(message))
+      expect(v.readable).toBe(true)
+      expect(v.message).toBe(message)
+      expect(v.inside).toBeNull()
+    }
+  })
+
+  it('HTTPS and VPN: \'Inside\' shows only the captured bytes (at most 6 pairs), never the message', () => {
+    for (const s of ['https', 'vpn'] as const) {
+      for (const message of SAMPLE_MESSAGES) {
+        for (let run = 0; run < 25; run++) {
+          const v = snooperSees(s, message, randomBytes(message))
+          expect(v.readable).toBe(false)
+          expect(v.message).toBeNull()
+          expect(v.inside).toMatch(/^([0-9A-F]{2} ){5,}[0-9A-F]{2}( …)?$/)
+          expect(v.inside!.split(' ').filter((t) => t !== '…').length).toBeLessThanOrEqual(6)
+          expect(JSON.stringify(v)).not.toContain(message)
+          expect(v.inside!.toLowerCase()).not.toContain(message.toLowerCase())
+        }
+      }
+    }
+  })
+
+  it('the shown bytes depend only on the random bytes, not on the message', () => {
+    const bytes = ['8F', '4A', '91', 'C7', '2B', '0E', 'D3']
+    expect(snooperSees('https', 'Canteen at 1 PM?', bytes).inside).toBe('8F 4A 91 C7 2B 0E …')
+    expect(snooperSees('vpn', 'Lab journal due Friday', bytes).inside).toBe('8F 4A 91 C7 2B 0E …')
+    expect(copy.bubble.inside).toBe('Inside:')
+  })
+
+  it('without bytes there is nothing to show', () => {
+    expect(snooperSees('https', 'Canteen at 1 PM?').inside).toBeNull()
+  })
+
+  it('the bytes line appears right after \'can\'t open it\' and before the VPN note', () => {
+    const fields = (s: Scenario) =>
+      buildScenario(s).flatMap((x) => (x.kind === 'reveal' ? [x.field] : []))
+    expect(fields('https').indexOf('bytes')).toBe(fields('https').indexOf('content') + 1)
+    expect(fields('vpn').indexOf('bytes')).toBe(fields('vpn').indexOf('content') + 1)
+    expect(fields('vpn').indexOf('note')).toBeGreaterThan(fields('vpn').indexOf('bytes'))
+    expect(fields('insecure')).not.toContain('bytes')
   })
 })

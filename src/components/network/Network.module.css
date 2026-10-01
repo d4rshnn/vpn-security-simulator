@@ -246,6 +246,14 @@
   font-size: 19px;
 }
 
+/* What the snooper captured: simulated bytes, monospace, muted */
+.bubbleBytes {
+  fill: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 21px;
+  font-weight: 500;
+}
+
 .bubbleIn {
   animation: bubble-in var(--dur-ui) var(--ease) both;
 }
@@ -285,6 +293,10 @@
 
 .bubbleCompact .bubbleNote {
   font-size: 19px;
+}
+
+.bubbleCompact .bubbleBytes {
+  font-size: 18px;
 }
 
 @media (max-width: 767px), (orientation: portrait) {

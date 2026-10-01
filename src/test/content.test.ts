@@ -26,7 +26,7 @@ describe('VJTI sample messages (R3)', () => {
   })
 })
 
-describe('destination domain and VJTI wording (R3)', () => {
+describe('destination domain and wording (R3)', () => {
   it('the destination is the reserved vjti-chat.example domain', () => {
     expect(ADDRESSES.destHost).toBe('vjti-chat.example')
     expect(ADDRESSES.destHost).toMatch(/\.example$/)
@@ -39,8 +39,9 @@ describe('destination domain and VJTI wording (R3)', () => {
     )
   })
 
-  it('credits the VJTI Community of Coders in the footer', () => {
-    expect(copy.site.credit).toBe('Built by VJTI Community of Coders')
+  it('the footer is only the simulation disclaimer', () => {
+    expect(copy.site.footer).toBe('Simulation only: no real network, traffic or VPN is used.')
+    expect(Object.keys(copy.site)).not.toContain('credit')
   })
 })
 

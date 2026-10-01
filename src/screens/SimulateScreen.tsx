@@ -62,13 +62,14 @@ export function SimulateScreen({ state, dispatch }: SimulateScreenProps) {
           >
             {view && frame && itemAt && (
               <>
-                {frame.detected && <SnooperBubble seen={snooperSees(view.scenario, state.message)} revealed={frame.revealed} />}
+                {frame.detected && <SnooperBubble seen={snooperSees(view.scenario, state.message, view.bytes)} revealed={frame.revealed} />}
                 {frame.ghost && (
                   <PostalItem
                     variant="ghost"
                     at={pointOnSegment('router-snooper', frame.ghost.t, layout.nodes)}
                     opacity={frame.ghost.opacity * 0.85}
                     message={state.message}
+                  bytes={view.bytes}
                     written={frame.written}
                     sealed={frame.sealed}
                     wrapped={frame.wrapped}
@@ -79,6 +80,7 @@ export function SimulateScreen({ state, dispatch }: SimulateScreenProps) {
                   at={itemAt}
                   opacity={frame.item.opacity}
                   message={state.message}
+                  bytes={view.bytes}
                   written={frame.written}
                   sealed={frame.sealed}
                   wrapped={frame.wrapped}

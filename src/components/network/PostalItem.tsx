@@ -2,7 +2,16 @@ import type { ReactNode } from 'react'
 import { Lock } from 'lucide-react'
 import { copy } from '../../content/copy'
 import { ADDRESSES, type Point } from '../../simulation/network'
-import { ITEM, OUTER, placeItem, postalSize, wrapMessage, writtenLines, type Size } from '../../simulation/packetText'
+import {
+  ITEM,
+  OUTER,
+  placeItem,
+  postalSize,
+  scrambleLines,
+  wrapMessage,
+  writtenLines,
+  type Size,
+} from '../../simulation/packetText'
 import { placementOf, useDiagramLayout } from './layoutContext'
 import styles from './PostalItem.module.css'
 
@@ -18,6 +27,8 @@ interface PostalItemProps {
   at: Point // the item's spot on the line
   opacity: number
   message: string
+  /** This run's simulated bytes (HTTPS / VPN): the text turns into them as the postcard is sealed. Empty for HTTP. */
+  bytes?: string[]
   written: number // 0..1 of the message written on the postcard
   sealed: number // blue envelope: 0 = postcard, 1 = sealed
   wrapped: number // teal envelope: 0 = none, 1 = blue envelope sealed inside it
@@ -29,17 +40,36 @@ interface PostalItemProps {
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n))
 const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2)
 
-function Postcard({ lines }: { lines: string[] }) {
+interface PostcardProps {
+  lines: string[]
+  bytes: string[]
+  /** 0 = readable, 1 = fully turned into simulated bytes. */
+  scramble: number
+  reduced: boolean
+}
+
+function Postcard({ lines, bytes, scramble, reduced }: PostcardProps) {
   const { width: W, height: H } = ITEM
   const top = lines.length > 1 ? 50 : 66
+  const line = (text: string, i: number, className: string, opacity?: number) => (
+    <text key={`${className}-${i}`} className={className} x={18} y={top + i * 32} opacity={opacity}>
+      {text}
+    </text>
+  )
+  const plainClass = styles.message
+  const codeClass = `${styles.message} ${styles.code}`
   return (
     <g className={styles.postcard}>
       <rect className={styles.paper} width={W} height={H} rx={10} />
-      {lines.map((line, i) => (
-        <text key={i} className={styles.message} x={18} y={top + i * 32}>
-          {line}
-        </text>
-      ))}
+      {reduced && scramble > 0 ? (
+        <>
+          {/* Reduced motion: cross-fade between the message and its code */}
+          {lines.map((text, i) => line(text, i, plainClass, 1 - scramble))}
+          {scrambleLines(lines, bytes, 1).map((text, i) => line(text, i, codeClass, scramble))}
+        </>
+      ) : (
+        scrambleLines(lines, bytes, scramble).map((text, i) => line(text, i, scramble > 0 ? codeClass : plainClass))
+      )}
       <line className={styles.divider} x1={214} y1={16} x2={214} y2={104} />
       <rect className={styles.stamp} x={230} y={14} width={54} height={44} rx={3} />
       <circle className={styles.stampMark} cx={257} cy={36} r={9} />
@@ -115,7 +145,17 @@ function Envelope({ size, accent, address, p, reduced, addressAlways = false, ch
   )
 }
 
-export function PostalItem({ at, opacity, message, written, sealed, wrapped, reduced, variant = 'main' }: PostalItemProps) {
+export function PostalItem({
+  at,
+  opacity,
+  message,
+  bytes = [],
+  written,
+  sealed,
+  wrapped,
+  reduced,
+  variant = 'main',
+}: PostalItemProps) {
   const placement = placementOf(useDiagramLayout())
   if (opacity <= 0.01) return null
 
@@ -139,7 +179,8 @@ export function PostalItem({ at, opacity, message, written, sealed, wrapped, red
     const s = reduced ? 0 : ease(clamp01(p / 0.5))
     return (
       <g opacity={visible} transform={`translate(${ITEM.width * 0.1 * s} ${ITEM.height * 0.22 * s}) scale(${1 - 0.2 * s})`}>
-        <Postcard lines={lines} />
+        {/* The text turns into code in the first part of sealing, just before the flap closes (and back when opened). */}
+        <Postcard lines={lines} bytes={bytes} scramble={bytes.length ? clamp01(p / 0.4) : 0} reduced={reduced} />
       </g>
     )
   }

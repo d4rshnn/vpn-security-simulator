@@ -10,7 +10,6 @@ export const copy = {
     steps: ['Message', 'Simulate', 'Summary'],
     progress: 'Progress',
     footer: 'Simulation only: no real network, traffic or VPN is used.',
-    credit: 'Built by VJTI Community of Coders',
   },
 
   intro: {
@@ -55,6 +54,7 @@ export const copy = {
   bubble: {
     noticed: 'Noticed traffic',
     cantOpen: "can't open it",
+    inside: 'Inside:',
     stillSees: 'Still sees: a VPN is used, when, how much.',
   },
 

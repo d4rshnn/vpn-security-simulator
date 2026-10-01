@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SAMPLE_MESSAGES } from '../content/samples'
 import { NODES } from '../simulation/network'
-import { graphemes, ITEM, itemBox, overlaps, wrapMessage, writtenLines } from '../simulation/packetText'
+import { graphemes, ITEM, itemBox, overlaps, scrambleLines, wrapMessage, writtenLines } from '../simulation/packetText'
 
 describe('wrapMessage (postcard text)', () => {
   it('keeps short messages on one line', () => {
@@ -63,5 +63,29 @@ describe('itemBox / overlaps', () => {
   it('detects overlap', () => {
     expect(overlaps({ x: 0, y: 0, width: 10, height: 10 }, { x: 5, y: 5, width: 10, height: 10 })).toBe(true)
     expect(overlaps({ x: 0, y: 0, width: 10, height: 10 }, { x: 10, y: 0, width: 10, height: 10 })).toBe(false)
+  })
+})
+
+describe('scrambleLines (the postcard text turning into code)', () => {
+  const lines = ['DSA practice in', 'Room 204 tonight']
+  const bytes = ['8F', '4A', '91', 'C7', '2B', '0E', 'D3', '55', 'A0', '7C', '12']
+
+  it('leaves the text alone with no bytes (HTTP) or at 0', () => {
+    expect(scrambleLines(lines, [], 1)).toEqual(lines)
+    expect(scrambleLines(lines, bytes, 0)).toEqual(lines)
+  })
+
+  it('turns every line fully into bytes at 1, keeping the length of each line', () => {
+    const code = scrambleLines(lines, bytes, 1)
+    expect(code.map((l) => graphemes(l).length)).toEqual(lines.map((l) => graphemes(l).length))
+    expect(code[0]).toMatch(/^[0-9A-F ]+$/)
+    expect(code.join(' ')).not.toContain('practice')
+    expect(code.join(' ')).not.toContain('tonight')
+  })
+
+  it('changes characters left to right as it goes', () => {
+    const half = scrambleLines(lines, bytes, 0.5)
+    expect(half[0].slice(0, 8)).toBe('8F 4A 91')
+    expect(half[0].slice(8)).toBe(lines[0].slice(8))
   })
 })

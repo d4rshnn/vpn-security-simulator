@@ -11,9 +11,10 @@
 import { copy } from '../content/copy'
 import type { Scenario } from '../site/types'
 import { ADDRESSES, type SegmentId } from './network'
+import { formatBytes } from './simulatedBytes'
 import { stepProgress, type TimedStep } from './timeline'
 
-export type RevealField = 'address' | 'content' | 'note'
+export type RevealField = 'address' | 'content' | 'bytes' | 'note'
 
 export type MotionStep = TimedStep &
   (
@@ -62,7 +63,7 @@ const SCRIPTS: Record<Scenario, MotionStep[]> = {
     { kind: 'caption', key: 'snooper', at: 4.8, dur: 0 },
     { kind: 'ghost', at: 4.8, dur: 1.0 },
     { kind: 'move', segment: 'router-dest', at: 5.1, dur: 2.8 },
-    ...reveals(5.8, ['address', 'content']),
+    ...reveals(5.8, ['address', 'content', 'bytes']),
     { kind: 'caption', key: 'decrypt', at: 7.9, dur: 0 },
     { kind: 'open', node: 'dest', at: 7.9, dur: 0.8 },
     { kind: 'deliver', at: 8.7, dur: 0.4 },
@@ -84,7 +85,7 @@ const SCRIPTS: Record<Scenario, MotionStep[]> = {
     { kind: 'caption', key: 'snooper', at: 7.6, dur: 0 },
     { kind: 'ghost', at: 7.6, dur: 1.0 },
     { kind: 'move', segment: 'router-vpn', at: 7.9, dur: 2.4 },
-    ...reveals(8.6, ['address', 'content', 'note']),
+    ...reveals(8.6, ['address', 'content', 'bytes', 'note']),
     { kind: 'caption', key: 'decrypt', at: 10.3, dur: 0 },
     { kind: 'unwrap', node: 'vpn', at: 10.3, dur: 0.8 },
     { kind: 'caption', key: 'trust', at: 11.2, dur: 0 },
@@ -117,16 +118,20 @@ export interface SnooperView {
   address: string | null // the address on the outermost envelope (metadata); none for a postcard
   readable: boolean // only a postcard (HTTP) can be read
   message: string | null // the message itself, only when readable
+  /** HTTPS / VPN: the first captured bytes ("8F 4A 91 C7 2B 0E …"), never the message. Null for a readable postcard. */
+  inside: string | null
   canStillSeeNote: boolean // VPN: "Still sees: a VPN is used, when, how much."
 }
 
-export function snooperSees(scenario: Scenario, message: string): SnooperView {
+/** `bytes` are this run's simulated bytes (see simulatedBytes.ts); they are independent of the message. */
+export function snooperSees(scenario: Scenario, message: string, bytes: readonly string[] = []): SnooperView {
   const readable = scenario === 'insecure'
   return {
     noticed: true,
     address: scenario === 'https' ? ADDRESSES.destHost : scenario === 'vpn' ? copy.diagram.vpn : null,
     readable,
     message: readable ? message : null,
+    inside: !readable && bytes.length > 0 ? formatBytes(bytes) : null,
     canStillSeeNote: scenario === 'vpn',
   }
 }

@@ -120,3 +120,22 @@ export function placeItem(at: Point, size: Size, placement: Placement = FLOAT): 
     rect: { x: cx - half, y: at.y - (size.height * s) / 2, width: size.width * s, height: size.height * s },
   }
 }
+
+/**
+ * The postcard text turning into code: the first `q` (0..1) of each line's characters are replaced,
+ * left to right, by characters of the simulated bytes ("8F 4A 91 …"). Line lengths never change.
+ * With no bytes (HTTP) the lines come back untouched.
+ */
+export function scrambleLines(lines: string[], bytes: readonly string[], q: number): string[] {
+  if (bytes.length === 0) return lines
+  const hex = bytes.join(' ') + ' '
+  const amount = Math.min(1, Math.max(0, q))
+  let offset = 0
+  return lines.map((line) => {
+    const chars = graphemes(line)
+    const cut = Math.round(amount * chars.length)
+    const out = chars.map((ch, i) => (i < cut ? hex[(offset + i) % hex.length] : ch))
+    offset += chars.length
+    return out.join('')
+  })
+}

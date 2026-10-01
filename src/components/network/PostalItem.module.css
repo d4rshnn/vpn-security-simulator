@@ -35,6 +35,13 @@
   white-space: pre;
 }
 
+/* While (and after) the text has turned into simulated bytes */
+.code {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 500;
+}
+
 .divider,
 .addressLine {
   stroke: var(--ink-soft);

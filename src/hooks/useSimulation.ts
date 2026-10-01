@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { buildScenario, frameAt, type SimFrame } from '../simulation/scenarios'
+import { randomBytes } from '../simulation/simulatedBytes'
 import { playTimeline } from '../simulation/timeline'
 import type { RunResult, Scenario, SiteState } from '../site/types'
 
@@ -7,6 +8,7 @@ export interface SimView {
   scenario: Scenario
   reduced: boolean
   replay: boolean // this scenario had already been run when this run started
+  bytes: string[] // this run's simulated bytes (HTTPS / VPN); new every run, made before the run starts
   frame: SimFrame
 }
 
@@ -31,12 +33,13 @@ export function useSimulation(
     if (!run) return
     const { scenario } = run
     const steps = buildScenario(scenario)
+    const bytes = scenario === 'insecure' ? [] : randomBytes(message) // before the timeline starts
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
     const controller = new AbortController()
 
     playTimeline(steps, {
       signal: controller.signal,
-      onFrame: (t) => setView({ scenario, reduced, replay, frame: frameAt(steps, t, reduced) }),
+      onFrame: (t) => setView({ scenario, reduced, replay, bytes, frame: frameAt(steps, t, reduced) }),
       onDone: () => onFinishRef.current({ scenario }),
     })
     return () => controller.abort()
