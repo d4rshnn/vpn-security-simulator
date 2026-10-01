@@ -15,9 +15,8 @@ Everything is simulated in the browser. Nothing is stored, tracked, or sent anyw
 ## Requirements
 
 - Node.js 20.19+ or 22.12+ (check with `node -v`)
-- npm (comes with Node)
-
-The exact list is in `requirements.txt`.
+- npm 10+ (comes with Node)
+- A recent Chrome or Edge
 
 ## Run it
 
