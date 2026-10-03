@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { copy } from '../content/copy'
 import { ADDRESSES, ROUTES, SCENARIO_ROUTE } from '../simulation/network'
-import { buildScenario, captionText, firstCaption, frameAt, snooperSees, type MotionStep } from '../simulation/scenarios'
+import {
+  buildScenario,
+  captionText,
+  firstCaption,
+  frameAt,
+  READING,
+  readingTime,
+  snooperSees,
+  type MotionStep,
+} from '../simulation/scenarios'
 import { SAMPLE_MESSAGES } from '../content/samples'
 import { randomBytes } from '../simulation/simulatedBytes'
 import { totalDuration } from '../simulation/timeline'
@@ -33,10 +42,13 @@ describe('postal scripts (spec §I, Rev 5)', () => {
     expect(kinds(s)).toContain('ghost')
   })
 
-  it('lasts about 11 / 12 / 18 s', () => {
-    expect(end('insecure')).toBeCloseTo(11, 0)
-    expect(end('https')).toBeCloseTo(12, 0)
-    expect(end('vpn')).toBeCloseTo(18, 0)
+  it('lasts about 16 / 16 / 33 s (paced for reading)', () => {
+    expect(end('insecure')).toBeGreaterThan(14)
+    expect(end('insecure')).toBeLessThan(18)
+    expect(end('https')).toBeGreaterThan(14)
+    expect(end('https')).toBeLessThan(18)
+    expect(end('vpn')).toBeGreaterThan(29)
+    expect(end('vpn')).toBeLessThan(37)
   })
 
   it('HTTP stays a postcard; HTTPS seals the blue envelope; VPN = HTTPS + the teal outer envelope + tunnel', () => {
@@ -198,9 +210,10 @@ describe('frameAt', () => {
 
   it('reduced motion: moves fade out and back in instead of sliding', () => {
     const steps = buildScenario('insecure')
-    expect(frameAt(steps, 1.2 + 1.2, true).item.opacity).toBeCloseTo(0)
-    expect(frameAt(steps, 1.2 + 0.6, true).item.t).toBe(0)
-    expect(frameAt(steps, 1.2 + 1.8, true).item.t).toBe(1)
+    const hop = find('insecure', 'move')!
+    expect(frameAt(steps, hop.at + hop.dur * 0.5, true).item.opacity).toBeCloseTo(0)
+    expect(frameAt(steps, hop.at + hop.dur * 0.25, true).item.t).toBe(0)
+    expect(frameAt(steps, hop.at + hop.dur * 0.75, true).item.t).toBe(1)
   })
 })
 
@@ -286,5 +299,58 @@ describe('snooper bubble bytes (simulated encryption)', () => {
     expect(fields('vpn').indexOf('bytes')).toBe(fields('vpn').indexOf('content') + 1)
     expect(fields('vpn').indexOf('note')).toBeGreaterThan(fields('vpn').indexOf('bytes'))
     expect(fields('insecure')).not.toContain('bytes')
+  })
+})
+
+describe('readable captions (every caption stays up long enough to read)', () => {
+  const windows = (s: Scenario) => {
+    const steps = buildScenario(s)
+    const captions = steps.filter((x): x is Extract<MotionStep, { kind: 'caption' }> => x.kind === 'caption')
+    return captions.map((c, i) => ({
+      key: c.key,
+      text: captionText(s, c.key),
+      shown: (captions[i + 1]?.at ?? c.at) - c.at, // the last caption stays up after the run, so it is not measured here
+      isLast: i === captions.length - 1,
+    }))
+  }
+
+  it.each(SCENARIOS)('%s: no caption is replaced before its reading time is up', (s) => {
+    for (const w of windows(s).filter((x) => !x.isLast)) {
+      expect(w.shown, w.key + ' ("' + w.text + '")').toBeGreaterThanOrEqual(readingTime(w.text) - 1e-9)
+      expect(w.shown).toBeGreaterThanOrEqual(READING.min - 1e-9)
+    }
+  })
+
+  it.each(SCENARIOS)('%s: the final caption settles on screen before the run ends', (s) => {
+    const last = windows(s).find((x) => x.isLast)!
+    const lastAt = buildScenario(s).filter((x) => x.kind === 'caption').at(-1)!.at
+    expect(end(s) - lastAt).toBeGreaterThanOrEqual(2)
+    expect(last.text.length).toBeGreaterThan(0)
+  })
+
+  it('reading time grows with the sentence and stays between 2.4 s and 4 s', () => {
+    expect(readingTime('Only it.')).toBe(READING.min)
+    expect(readingTime('It travels over the café Wi-Fi…')).toBeLessThan(readingTime(copy.captions.vpn.snooper))
+    expect(readingTime(copy.captions.vpn.decrypt)).toBe(READING.max)
+    for (const s of SCENARIOS) {
+      for (const w of windows(s)) {
+        expect(readingTime(w.text)).toBeGreaterThanOrEqual(READING.min)
+        expect(readingTime(w.text)).toBeLessThanOrEqual(READING.max)
+      }
+    }
+  })
+
+  it('each caption matches the action: the item arrives when the next caption starts', () => {
+    const startOf = (s: Scenario, key: string) =>
+      buildScenario(s).find((x): x is Extract<MotionStep, { kind: 'caption' }> => x.kind === 'caption' && x.key === key)!.at
+    const arrive = (s: Scenario, segment: string) => {
+      const m = buildScenario(s).find((x) => x.kind === 'move' && x.segment === segment)!
+      return m.at + m.dur
+    }
+    expect(arrive('insecure', 'you-router')).toBeCloseTo(startOf('insecure', 'captured'))
+    expect(arrive('insecure', 'router-dest')).toBeCloseTo(startOf('insecure', 'arrives'))
+    expect(arrive('https', 'router-dest')).toBeCloseTo(startOf('https', 'decrypt'))
+    expect(arrive('vpn', 'router-vpn')).toBeCloseTo(startOf('vpn', 'decrypt'))
+    expect(arrive('vpn', 'vpn-dest')).toBeCloseTo(startOf('vpn', 'open'))
   })
 })

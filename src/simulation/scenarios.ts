@@ -7,6 +7,7 @@
  *           The VPN server opens only the teal one; the blue one stays sealed until the destination.
  * Snooping is passive: at the router the real item pauses at most 0.3 s and moves on
  * while the ghost copy slides down to the snooper in parallel.
+ * Pacing: every caption stays up long enough to read (see readingTime); the animation is built around it.
  */
 import { copy } from '../content/copy'
 import type { Scenario } from '../site/types'
@@ -37,66 +38,130 @@ function reveals(at: number, fields: RevealField[]): MotionStep[] {
   return fields.map((field, i) => ({ kind: 'reveal', field, at: at + i * 0.25, dur: 0 }))
 }
 
+/*
+ * Readable pacing. Every caption stays on screen long enough to read, and the animation is laid out
+ * around it: a "beat" is one caption plus the actions that go with it, and lasts at least the caption's reading time.
+ */
+export const READING = { base: 0.8, perWord: 0.25, min: 2.4, max: 4.0 } as const
+
+/** Seconds a caption needs on screen: about 0.8 s to look up, then 0.25 s per word, between 2.4 s and 4 s. */
+export function readingTime(text: string): number {
+  const words = text.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length
+  return Math.min(READING.max, Math.max(READING.min, READING.base + READING.perWord * words))
+}
+
+const PAUSE_AT_ROUTER = 0.3 // snooping is passive: the real item waits at most this long at the router
+const COPY_SLIDE = 2.4 // the snooper's dashed copy glides down slowly enough to be seen
+const REVEAL_FINAL_HOLD = 2.4 // after the last caption the run settles for a moment
+
+/** A cursor over the run: each beat adds its caption at the current time, then moves time on by the caption's reading time. */
+function beats(scenario: Scenario) {
+  const steps: MotionStep[] = []
+  let t = 0
+  const dwell = (key: string) => readingTime(captionText(scenario, key))
+  return {
+    steps,
+    /** Starts a beat; returns its start and how long it lasts. */
+    beat(key: string): { at: number; dur: number } {
+      const at = t
+      const dur = dwell(key)
+      steps.push({ kind: 'caption', key, at, dur: 0 })
+      t += dur
+      return { at, dur }
+    },
+    dwell,
+    end: () => t,
+  }
+}
+
+/** The step where the real item leaves the router while the snooper's copy slides down in parallel. */
+function atRouter(b: { at: number; dur: number }, to: SegmentId, fields: RevealField[]): MotionStep[] {
+  const copySlide = Math.min(COPY_SLIDE, b.dur - 0.4)
+  return [
+    { kind: 'ghost', at: b.at, dur: copySlide },
+    // The item arrives at the next stop exactly when the next caption starts.
+    { kind: 'move', segment: to, at: b.at + PAUSE_AT_ROUTER, dur: b.dur - PAUSE_AT_ROUTER },
+    ...(fields.length ? reveals(b.at + copySlide, fields) : []),
+  ]
+}
+
+function buildInsecure(): MotionStep[] {
+  const s = beats('insecure')
+  const packed = s.beat('packed')
+  s.steps.push({ kind: 'write', at: packed.at + 0.2, dur: 0.9 })
+  const wifi = s.beat('wifi')
+  s.steps.push({ kind: 'move', segment: 'you-router', at: wifi.at, dur: wifi.dur })
+  const captured = s.beat('captured')
+  const readable = s.beat('readable')
+  // The postcard crosses to the destination while both captions are read; the copy reaches the snooper first.
+  s.steps.push(
+    { kind: 'ghost', at: captured.at, dur: Math.min(COPY_SLIDE, captured.dur - 0.4) },
+    {
+      kind: 'move',
+      segment: 'router-dest',
+      at: captured.at + PAUSE_AT_ROUTER,
+      dur: captured.dur + readable.dur - PAUSE_AT_ROUTER,
+    },
+    ...reveals(readable.at, ['content']),
+  )
+  const arrives = s.beat('arrives')
+  s.steps.push({ kind: 'deliver', at: arrives.at, dur: 0.6 })
+  const next = s.beat('next')
+  s.steps.push({ kind: 'hold', at: next.at, dur: REVEAL_FINAL_HOLD })
+  return s.steps
+}
+
+function buildHttps(): MotionStep[] {
+  const s = beats('https')
+  const start = s.beat('start')
+  s.steps.push({ kind: 'write', at: start.at, dur: 0.9 })
+  const encrypt = s.beat('encrypt')
+  s.steps.push({ kind: 'seal', at: encrypt.at, dur: 1.2 })
+  const wifi = s.beat('wifi')
+  s.steps.push({ kind: 'move', segment: 'you-router', at: wifi.at, dur: wifi.dur })
+  const snooper = s.beat('snooper')
+  s.steps.push(...atRouter(snooper, 'router-dest', ['address', 'content', 'bytes']))
+  const decrypt = s.beat('decrypt')
+  s.steps.push({ kind: 'open', node: 'dest', at: decrypt.at, dur: 0.8 }, { kind: 'deliver', at: decrypt.at + 0.8, dur: 0.4 })
+  const next = s.beat('next')
+  s.steps.push({ kind: 'hold', at: next.at, dur: REVEAL_FINAL_HOLD })
+  return s.steps
+}
+
+function buildVpn(): MotionStep[] {
+  const s = beats('vpn')
+  const start = s.beat('start')
+  s.steps.push({ kind: 'write', at: start.at, dur: 0.9 })
+  const encrypt = s.beat('encrypt')
+  s.steps.push({ kind: 'seal', at: encrypt.at, dur: 1.2 })
+  const wrap = s.beat('wrap')
+  s.steps.push({ kind: 'wrap', at: wrap.at, dur: 1.6 })
+  s.beat('wrapAddress')
+  const tunnel = s.beat('tunnel')
+  s.steps.push({ kind: 'tunnel', at: tunnel.at, dur: 0.8 })
+  const wifi = s.beat('wifi')
+  s.steps.push({ kind: 'move', segment: 'you-router', at: wifi.at, dur: wifi.dur })
+  const snooper = s.beat('snooper')
+  s.steps.push(...atRouter(snooper, 'router-vpn', ['address', 'content', 'bytes', 'note']))
+  const decrypt = s.beat('decrypt')
+  s.steps.push({ kind: 'unwrap', node: 'vpn', at: decrypt.at, dur: 0.8 })
+  s.beat('trust')
+  const regular = s.beat('regular')
+  s.steps.push({ kind: 'move', segment: 'vpn-dest', at: regular.at, dur: regular.dur })
+  const open = s.beat('open')
+  s.steps.push({ kind: 'open', node: 'dest', at: open.at, dur: 0.8 }, { kind: 'deliver', at: open.at + 0.8, dur: 0.6 })
+  const next = s.beat('next')
+  s.steps.push({ kind: 'hold', at: next.at, dur: REVEAL_FINAL_HOLD })
+  return s.steps
+}
+
+/** Steps are listed in time order; steps that start together keep the order they were added in (caption first). */
+const byTime = (steps: MotionStep[]): MotionStep[] => [...steps].sort((a, b) => a.at - b.at)
+
 const SCRIPTS: Record<Scenario, MotionStep[]> = {
-  insecure: [
-    { kind: 'caption', key: 'packed', at: 0, dur: 0 },
-    { kind: 'write', at: 0.2, dur: 0.9 },
-    { kind: 'caption', key: 'wifi', at: 1.2, dur: 0 },
-    { kind: 'move', segment: 'you-router', at: 1.2, dur: 2.4 },
-    { kind: 'caption', key: 'captured', at: 3.6, dur: 0 },
-    { kind: 'ghost', at: 3.6, dur: 1.0 },
-    { kind: 'move', segment: 'router-dest', at: 3.9, dur: 2.8 },
-    { kind: 'caption', key: 'readable', at: 4.6, dur: 0 },
-    ...reveals(4.6, ['content']),
-    { kind: 'caption', key: 'arrives', at: 6.7, dur: 0 },
-    { kind: 'deliver', at: 6.7, dur: 0.6 },
-    { kind: 'caption', key: 'next', at: 8.0, dur: 0 },
-    { kind: 'hold', at: 8.0, dur: 3.0 },
-  ],
-  https: [
-    { kind: 'caption', key: 'start', at: 0, dur: 0 },
-    { kind: 'write', at: 0, dur: 0.9 },
-    { kind: 'caption', key: 'encrypt', at: 1.0, dur: 0 },
-    { kind: 'seal', at: 1.0, dur: 1.2 },
-    { kind: 'caption', key: 'wifi', at: 2.4, dur: 0 },
-    { kind: 'move', segment: 'you-router', at: 2.4, dur: 2.4 },
-    { kind: 'caption', key: 'snooper', at: 4.8, dur: 0 },
-    { kind: 'ghost', at: 4.8, dur: 1.0 },
-    { kind: 'move', segment: 'router-dest', at: 5.1, dur: 2.8 },
-    ...reveals(5.8, ['address', 'content', 'bytes']),
-    { kind: 'caption', key: 'decrypt', at: 7.9, dur: 0 },
-    { kind: 'open', node: 'dest', at: 7.9, dur: 0.8 },
-    { kind: 'deliver', at: 8.7, dur: 0.4 },
-    { kind: 'caption', key: 'next', at: 9.4, dur: 0 },
-    { kind: 'hold', at: 9.4, dur: 2.6 },
-  ],
-  vpn: [
-    { kind: 'caption', key: 'start', at: 0, dur: 0 },
-    { kind: 'write', at: 0, dur: 0.9 },
-    { kind: 'caption', key: 'encrypt', at: 1.0, dur: 0 },
-    { kind: 'seal', at: 1.0, dur: 1.2 },
-    { kind: 'caption', key: 'wrap', at: 2.6, dur: 0 },
-    { kind: 'wrap', at: 2.6, dur: 1.6 },
-    { kind: 'caption', key: 'wrapAddress', at: 3.6, dur: 0 },
-    { kind: 'caption', key: 'tunnel', at: 4.4, dur: 0 },
-    { kind: 'tunnel', at: 4.4, dur: 0.8 },
-    { kind: 'caption', key: 'wifi', at: 5.2, dur: 0 },
-    { kind: 'move', segment: 'you-router', at: 5.2, dur: 2.4 },
-    { kind: 'caption', key: 'snooper', at: 7.6, dur: 0 },
-    { kind: 'ghost', at: 7.6, dur: 1.0 },
-    { kind: 'move', segment: 'router-vpn', at: 7.9, dur: 2.4 },
-    ...reveals(8.6, ['address', 'content', 'bytes', 'note']),
-    { kind: 'caption', key: 'decrypt', at: 10.3, dur: 0 },
-    { kind: 'unwrap', node: 'vpn', at: 10.3, dur: 0.8 },
-    { kind: 'caption', key: 'trust', at: 11.2, dur: 0 },
-    { kind: 'caption', key: 'regular', at: 11.9, dur: 0 },
-    { kind: 'move', segment: 'vpn-dest', at: 11.9, dur: 2.6 },
-    { kind: 'caption', key: 'open', at: 14.5, dur: 0 },
-    { kind: 'open', node: 'dest', at: 14.5, dur: 0.8 },
-    { kind: 'deliver', at: 15.3, dur: 0.6 },
-    { kind: 'caption', key: 'next', at: 16.2, dur: 0 },
-    { kind: 'hold', at: 16.2, dur: 2.0 },
-  ],
+  insecure: byTime(buildInsecure()),
+  https: byTime(buildHttps()),
+  vpn: byTime(buildVpn()),
 }
 
 export function buildScenario(scenario: Scenario): readonly MotionStep[] {
